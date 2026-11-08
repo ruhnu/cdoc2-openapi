@@ -3,7 +3,7 @@ info:
   contact:
     url: http://ria.ee
   title: cdoc2-key-shares
-  version: 1.3.2-draft
+  version: 1.4.0-draft
   description: |
     API for exchanging CDOC2 key material shares.
     
@@ -56,9 +56,11 @@ paths:
           in: header
           schema:
             type: string
-          required: true
+          required: false
           description: |
-            Base64Url-encoded DER certificate that was used to sign x-cdoc2-auth-token. 
+            Mandatory for "etsi/" recipients (Smart-ID/Mobile-ID). Not used for "ruhnu/pk/" recipients,
+            whose x-cdoc2-auth-token is verified with the public key named in its "iss" claim.
+            Base64Url-encoded DER certificate that was used to sign x-cdoc2-auth-token.
             Certificate holders identify is specified in Subject "serialnumber" field. Example certificate subject: 
             'serialNumber = PNOEE-30303039914, GN = OK, SN = TESTNUMBER, CN = "TESTNUMBER,OK", C = EE'
             Certificate full structure is defined in 
@@ -253,10 +255,11 @@ components:
         recipient:
           type: string
           minLength: 12
-          maxLength: 32
+          maxLength: 255
           description: |
-            Recipient who can download this share. ETSI319412-1. Example "etsi/PNOEE-48010010101". 
+            Recipient who can download this share. ETSI319412-1. Example "etsi/PNOEE-48010010101".
             Must match certificate subject serialnumber field (without "etsi/" prefix).
+            Servers that support it also accept an SSH public key recipient "ruhnu/pk/<base64 OpenSSH public key blob>".
             In future might support other formats 
             [etsi/:semantics-identifier](https://github.com/SK-EID/smart-id-documentation/blob/v2/README.md#2322-etsisemantics-identifier)
       required:
@@ -279,10 +282,11 @@ components:
     SessionTokenHeader:
       name: x-cdoc2-session-token
       in: header
-      required: true
+      required: false
       schema:
         type: string
       description: |
+        Mandatory for "etsi/" recipients (Smart-ID/Mobile-ID). Not used for "ruhnu/pk/" recipients.
         SDJWT [Session token WIP](). Signed by cdoc2-auth-server using key identified by 
         'kid' in JWT header. Contains a MID/SID signature as part of the payload. 'aud' claim
         contains selectively-disclosed array element identifying a session nonce that is 
@@ -291,10 +295,11 @@ components:
     SessionX5cHeader:
       name: x-cdoc2-session-x5c
       in: header
-      required: true
+      required: false
       schema:
         type: string
       description: |
+        Mandatory for "etsi/" recipients (Smart-ID/Mobile-ID). Not used for "ruhnu/pk/" recipients.
         Base64Url-encoded DER certificate that was used to generate the MID/SID signature in x-cdoc2-session-token payload. 
         Certificate holder's identity is specified in Subject "serialnumber" field. Example certificate subject: 
         'serialNumber = PNOEE-30303039914, GN = OK, SN = TESTNUMBER, CN = "TESTNUMBER,OK", C = EE'
