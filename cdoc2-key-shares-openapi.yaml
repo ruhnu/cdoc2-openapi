@@ -3,7 +3,7 @@ info:
   contact:
     url: http://ria.ee
   title: cdoc2-key-shares
-  version: 1.4.0-draft
+  version: 1.5.0-draft
   description: |
     API for exchanging CDOC2 key material shares.
     
@@ -52,14 +52,17 @@ paths:
           description: |
             SDJWT [Auth token WIP](https://github
             .com/open-eid/CDOC2/blob/master/cdoc2-system-docs/docs/03_system_architecture/ch06_ID_authentication_protocol.md?ref_type=heads#verifying-sd-jwt-verifying-authentication-ticket)
+            For "ruhnu/did/" recipients the token carries the signing public key in its JWS "jwk" header,
+            because the recipient identifier holds only the key's fingerprint.
         - name: x-cdoc2-auth-x5c
           in: header
           schema:
             type: string
           required: false
           description: |
-            Mandatory for "etsi/" recipients (Smart-ID/Mobile-ID). Not used for "ruhnu/pk/" recipients,
-            whose x-cdoc2-auth-token is verified with the public key named in its "iss" claim.
+            Mandatory for "etsi/" recipients (Smart-ID/Mobile-ID). Not used for "ruhnu/pk/" or "ruhnu/did/"
+            recipients, whose x-cdoc2-auth-token is verified with the public key named in its "iss" claim
+            ("ruhnu/pk/") or carried in its JWS "jwk" header ("ruhnu/did/").
             Base64Url-encoded DER certificate that was used to sign x-cdoc2-auth-token.
             Certificate holders identify is specified in Subject "serialnumber" field. Example certificate subject: 
             'serialNumber = PNOEE-30303039914, GN = OK, SN = TESTNUMBER, CN = "TESTNUMBER,OK", C = EE'
@@ -93,6 +96,10 @@ paths:
           description: 'Unauthorized. No correct auth headers'
         '404':
           description: 'Not Found. 404 is also returned, when recipient id in record does not match user id in auth-ticket'
+        '503':
+          description: >
+            Service Unavailable. The DID document of a "ruhnu/did/" recipient could not be retrieved
+            from its DID host; retry later.
 
   '/key-shares':
     post:
@@ -259,7 +266,8 @@ components:
           description: |
             Recipient who can download this share. ETSI319412-1. Example "etsi/PNOEE-48010010101".
             Must match certificate subject serialnumber field (without "etsi/" prefix).
-            Servers that support it also accept an SSH public key recipient "ruhnu/pk/<base64 OpenSSH public key blob>".
+            Servers that support it also accept an SSH public key recipient "ruhnu/pk/<base64 OpenSSH public key blob>",
+            and a DID recipient "ruhnu/did/<did:web DID>/hash/<base64url SHA-256 of the OpenSSH public key blob>".
             In future might support other formats 
             [etsi/:semantics-identifier](https://github.com/SK-EID/smart-id-documentation/blob/v2/README.md#2322-etsisemantics-identifier)
       required:
@@ -286,7 +294,7 @@ components:
       schema:
         type: string
       description: |
-        Mandatory for "etsi/" recipients (Smart-ID/Mobile-ID). Not used for "ruhnu/pk/" recipients.
+        Mandatory for "etsi/" recipients (Smart-ID/Mobile-ID). Not used for "ruhnu/pk/" or "ruhnu/did/" recipients.
         SDJWT [Session token WIP](). Signed by cdoc2-auth-server using key identified by 
         'kid' in JWT header. Contains a MID/SID signature as part of the payload. 'aud' claim
         contains selectively-disclosed array element identifying a session nonce that is 
@@ -299,7 +307,7 @@ components:
       schema:
         type: string
       description: |
-        Mandatory for "etsi/" recipients (Smart-ID/Mobile-ID). Not used for "ruhnu/pk/" recipients.
+        Mandatory for "etsi/" recipients (Smart-ID/Mobile-ID). Not used for "ruhnu/pk/" or "ruhnu/did/" recipients.
         Base64Url-encoded DER certificate that was used to generate the MID/SID signature in x-cdoc2-session-token payload. 
         Certificate holder's identity is specified in Subject "serialnumber" field. Example certificate subject: 
         'serialNumber = PNOEE-30303039914, GN = OK, SN = TESTNUMBER, CN = "TESTNUMBER,OK", C = EE'
